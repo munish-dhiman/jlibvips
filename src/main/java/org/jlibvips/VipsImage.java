@@ -6,6 +6,8 @@ import org.jlibvips.operations.*;
 import com.sun.jna.Pointer;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An image, residing in memory or disk, managed by libvips. Instance methods provide transformations and queries on
@@ -53,6 +55,27 @@ public class VipsImage {
             scale -= 0.1f;
         } while(image.getWidth() > POPPLER_CAIRO_LIMIT || image.getHeight() > POPPLER_CAIRO_LIMIT);
         return image;
+    }
+
+    public static List<VipsImage> getPagesFromPdf(Path p, int MAX_PAGES){
+        List<VipsImage> pages = new ArrayList<>();
+        try {
+            VipsImage first = fromPdf(p, 0);
+            pages.add(first);
+
+            for (int i = 1; i < Math.min(first.getPages(), MAX_PAGES); i++) {
+                VipsImage page = fromPdf(p, i);
+                pages.add(page);
+            }
+        }
+        catch (Exception exception) {
+            throw new CouldNotLoadPdfVipsException(-1);
+        }
+        return pages;
+    }
+
+    public static int init(){
+        return VipsBindings.INSTANCE.vips_init("application");
     }
 
     /**
@@ -189,6 +212,10 @@ public class VipsImage {
         return VipsBindings.INSTANCE.vips_image_get_width(ptr);
     }
 
+    public int getPages() {
+        return VipsBindings.INSTANCE.vips_image_get_n_pages(ptr);
+    }
+
     /**
      * Get the height of this image.
      *
@@ -209,6 +236,11 @@ public class VipsImage {
         return VipsBindings.INSTANCE.vips_image_get_bands(ptr);
     }
 
+    public VipsImage getGrids() {
+        var out = new Pointer[getPages()];
+        VipsBindings.INSTANCE.vips_grid(this.ptr, out, getHeight()/getPages(), getPages(), 1, null);
+        return new VipsImage(out[0]);
+    }
     /**
      * Insert sub into main at position.
      *
