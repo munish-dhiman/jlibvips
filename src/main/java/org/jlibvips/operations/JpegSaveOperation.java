@@ -9,6 +9,8 @@ import org.jlibvips.util.VipsUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
 
 public class JpegSaveOperation implements SaveOperation {
 
@@ -41,6 +43,23 @@ public class JpegSaveOperation implements SaveOperation {
                         .add("optimize_scans", optimizeScans).toArray());
         if(ret != 0) {
             throw new VipsException("vips_jpegsave", ret);
+        }
+        return path;
+    }
+
+    public Path saveAsPng(String pathStr) throws IOException, VipsException {
+        Path path = Files.createFile(Paths.get(pathStr).toAbsolutePath());
+        int ret = VipsBindings.INSTANCE.vips_pngsave(image.getPtr(), path.toString(),
+                new Varargs().add("Q", quality)
+                        .add("optimize_coding", VipsUtils.booleanToInteger(optimizeCoding))
+                        .add("interlace", VipsUtils.booleanToInteger(interlace))
+                        .add("strip", VipsUtils.booleanToInteger(strip))
+                        .add("no_subsample", VipsUtils.booleanToInteger(noSubsample))
+                        .add("trellis_quant", VipsUtils.booleanToInteger(trellisQuant))
+                        .add("overshoot_deringing", VipsUtils.booleanToInteger(overshootDeringing))
+                        .add("optimize_scans", optimizeScans).toArray());
+        if(ret != 0) {
+            throw new VipsException("vips_pngsave", ret);
         }
         return path;
     }
